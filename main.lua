@@ -104,10 +104,10 @@ function love.draw()
   local ang = math.atan2(
     math.sin(zorg_ang)*ZORG_RADIUS-math.sin(moon_ang)*MOON_RADIUS,
     math.cos(zorg_ang)*ZORG_RADIUS-math.cos(moon_ang)*MOON_RADIUS
-  )
+  ) - (zorg_ang + math.pi/2)
   love.graphics.circle(
       "fill",
-      (width-20)*ang/math.pi+10,
+      (width-0)*ang/math.pi+0,
       height*0.75+height*0.25*math.abs(ang-math.pi/2)/(math.pi/2)-10,
       10
   )
