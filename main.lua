@@ -13,12 +13,17 @@ local ZORG_RADIUS = 50
 local MOON_RADIUS = 100
 local HORIZON_LENGTH = 500
 
+local ZORG_X = 0
+local ZORG_Y = 0
+
 -- Changes functionality
 local MOON_ORBIT = 6 -- hours
 local ZORG_DAY = 72 -- hours
 
 -- Speed of play ( when played with space )
 local PLAY_DELAY = 0.2
+
+local DEBUG = false
 
 function love.draw()
   local width = love.graphics.getWidth()
@@ -40,10 +45,6 @@ function love.draw()
     cx,cy,ZORG_RADIUS
   )
 
-  
- 
-  
-  
   love.graphics.circle(
     "fill",
     cx+math.cos(zorg_ang)*ZORG_RADIUS,
@@ -97,20 +98,48 @@ function love.draw()
   
   -- Ground view
   local r,g,b,a = love.graphics.getColor()
+  love.graphics.setColor(255,255,255)
+  love.graphics.line(
+	0,height*0.75-20,
+    width,height*0.75-20
+  )
   love.graphics.setColor(0,0,0)
   love.graphics.rectangle("fill", 0, height*0.75-20,width,height)
   love.graphics.setColor(r,g,b,a)
-  
+  text = "Horizon View"
+  love.graphics.print(text,width/2-font:getWidth(text)/2,height*0.75)
+
   local ang = math.atan2(
-    math.sin(zorg_ang)*ZORG_RADIUS-math.sin(moon_ang)*MOON_RADIUS,
-    math.cos(zorg_ang)*ZORG_RADIUS-math.cos(moon_ang)*MOON_RADIUS
-  ) - (zorg_ang + math.pi/2)
+    -math.sin(zorg_ang)*ZORG_RADIUS+math.sin(moon_ang)*MOON_RADIUS,
+    -math.cos(zorg_ang)*ZORG_RADIUS+math.cos(moon_ang)*MOON_RADIUS
+  ) --+  (math.pi/2 - zorg_ang)
+  local scaledang = (ang-(zorg_ang-math.pi/2))/math.pi
   love.graphics.circle(
       "fill",
-      (width-0)*ang/math.pi+0,
-      height*0.75+height*0.25*math.abs(ang-math.pi/2)/(math.pi/2)-10,
+      (width-0)*scaledang+0,
+      height*0.75+height*0.25*math.abs(scaledang-0.5)^2*4-10,
       10
   )
+  if DEBUG then
+    love.graphics.line(
+      cx+math.cos(zorg_ang)*ZORG_RADIUS,
+      cy+math.sin(zorg_ang)*ZORG_RADIUS,
+      cx+math.cos(zorg_ang)*ZORG_RADIUS+math.cos(ang)*30,
+      cy+math.sin(zorg_ang)*ZORG_RADIUS+math.sin(ang)*30
+    )
+    love.graphics.line(
+      100,100,
+      100+math.cos(ang)*30,
+      100+math.sin(ang)*30
+    )
+    love.graphics.circle("fill",100,100,2)
+    dx = math.sin(zorg_ang)*ZORG_RADIUS-math.sin(moon_ang)*MOON_RADIUS
+    dy = math.cos(zorg_ang)*ZORG_RADIUS-math.cos(moon_ang)*MOON_RADIUS
+    love.graphics.print((zorg_ang+math.pi/2).." to "..(zorg_ang-math.pi/2),5,5)
+    love.graphics.print("Raw "..ang,5,20)
+    love.graphics.print("Updated "..scaledang,5,35)
+    love.graphics.print("DELTA x: "..dx.." y:"..dy,5,50)
+  end
 end
 
 
@@ -154,6 +183,8 @@ function love.load()
   paused = true
   zorg_spin_m = 1
   moon_spin_m = 1
+  font = love.graphics.newFont(14)
+  love.graphics.setFont(font)
 
   love.window.setTitle("Zorg Simulator")
   love.graphics.setBackgroundColor(0.1,0.2,0.3)
