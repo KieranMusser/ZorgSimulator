@@ -14,30 +14,33 @@ local MOON_RADIUS = 100
 local HORIZON_LENGTH = 500
 
 local ZORG_X = 0
-local ZORG_Y = 0
+local ZORG_Y = -100
+local HORIZON_SIZE = 0.4
+
 
 -- Changes functionality
 local MOON_ORBIT = 6 -- hours
 local ZORG_DAY = 72 -- hours
 
 -- Speed of play ( when played with space )
-local PLAY_DELAY = 0.2
+local PLAY_DELAY = 0.1
+local PLAY_INC = 0.1
 
 local DEBUG = false
 
 function love.draw()
   local width = love.graphics.getWidth()
   local height = love.graphics.getHeight()
-  local cx = width / 2
-  local cy = height / 2
+  local cx = width / 2 + ZORG_X
+  local cy = height / 2 + ZORG_Y
   
-  local zorg_ang = zorg_spin_m * (time / ZORG_DAY * math.pi * 2) - math.pi/2
-  local moon_ang = moon_spin_m * (time / MOON_ORBIT * math.pi * 2) - math.pi/2
+  local zorg_ang = (zorg_spin_m * (time / ZORG_DAY * math.pi * 2) - math.pi/2) % (2*math.pi)
+  local moon_ang = (moon_spin_m * (time / MOON_ORBIT * math.pi * 2) - math.pi/2) % (2*math.pi)
   
   
   love.graphics.print(
     "Time (h) "..time,
-    cx,20
+    cx-font:getWidth("Time (h) "..time)/2,20
   )
   
   love.graphics.circle(
@@ -65,6 +68,9 @@ function love.draw()
   
   -- Horizon Line
   local horizon_slope = 1/-math.tan(zorg_ang)
+  if math.abs(horizon_slope) == 1/0 then
+    horizon_slope = 1000
+  end
   local x = math.sqrt(HORIZON_LENGTH^2 / (1+horizon_slope^2))
   local y = horizon_slope * x
   
@@ -98,26 +104,33 @@ function love.draw()
   
   -- Ground view
   local r,g,b,a = love.graphics.getColor()
+  love.graphics.setColor(0,0,0)
+  love.graphics.rectangle("fill", 0, height*(1-HORIZON_SIZE)-20,width,height)
   love.graphics.setColor(255,255,255)
   love.graphics.line(
-	0,height*0.75-20,
-    width,height*0.75-20
+	0,height*(1-HORIZON_SIZE)-20,
+    width,height*(1-HORIZON_SIZE)-20
   )
-  love.graphics.setColor(0,0,0)
-  love.graphics.rectangle("fill", 0, height*0.75-20,width,height)
   love.graphics.setColor(r,g,b,a)
   text = "Horizon View"
-  love.graphics.print(text,width/2-font:getWidth(text)/2,height*0.75)
-
+  love.graphics.print(text,width/2-font:getWidth(text)/2,height*(1-HORIZON_SIZE))
+ 
+  -- Angle of moon from horizon
   local ang = math.atan2(
     -math.sin(zorg_ang)*ZORG_RADIUS+math.sin(moon_ang)*MOON_RADIUS,
     -math.cos(zorg_ang)*ZORG_RADIUS+math.cos(moon_ang)*MOON_RADIUS
-  ) --+  (math.pi/2 - zorg_ang)
+  ) 
+  -- Scale angle so that [0,1] is the size of horizon
   local scaledang = (ang-(zorg_ang-math.pi/2))/math.pi
+  local sx = 1-math.cos(scaledang * math.pi)
+  local sy = -math.sin(scaledang * math.pi)
+
+
+  -- Draw moon on horizon view
   love.graphics.circle(
       "fill",
-      (width-0)*scaledang+0,
-      height*0.75+height*0.25*math.abs(scaledang-0.5)^2*4-10,
+      width/2 * sx + 0*width/2,--(width-0)*scaledang+0,
+      height*(1-HORIZON_SIZE)+height*HORIZON_SIZE*sy-10+height*HORIZON_SIZE,
       10
   )
   if DEBUG then
@@ -139,6 +152,7 @@ function love.draw()
     love.graphics.print("Raw "..ang,5,20)
     love.graphics.print("Updated "..scaledang,5,35)
     love.graphics.print("DELTA x: "..dx.." y:"..dy,5,50)
+    love.graphics.print("Test x "..math.cos(scaledang).." y "..math.sin(scaledang),5,65)
   end
 end
 
@@ -146,14 +160,12 @@ end
 function love.update(dt)
   if not paused then
     if tinc > PLAY_DELAY then
-      time = (time + 0.1)
+      time = (time + PLAY_INC)
       tinc = 0
     end
     tinc = tinc + dt
   end
-  if time > 72 then
-    time = math.floor((time - 72)*10)/10
-  end
+  --time = math.floor((time - 72)*10)/10
 end
 
 function love.keyreleased(key, scancode)
